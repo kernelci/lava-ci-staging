@@ -39,7 +39,6 @@ from jinja2 import Environment, FileSystemLoader
 
 
 LEGACY_X86_PLATFORMS = ['x86', 'x86-kvm']
-LEGACY_ARM64_PLATFORMS = ['qemu-aarch64-legacy']
 ARCHS = ['arm64', 'arm64be', 'armeb', 'armel', 'x86']
 ROOTFS_URL = 'http://storage.kernelci.org/images/rootfs'
 INITRD_URL = '/'.join([ROOTFS_URL, 'buildroot/{}/rootfs.cpio.gz'])
@@ -124,11 +123,12 @@ def main(args):
                         print "Unable to load test configuration"
                         exit(1)
             if build['kernel_image']:
+                if arch in ['arm64', 'arm', 'x86']:
+                    build['dtb_dir_data'].append('qemu')
+                ctx_arch = 'x86_64' if arch == 'x86' else arch
                 # handle devices without a DTB, hacky :/
                 if build['kernel_image'] == 'bzImage' and arch == 'x86':
                     build['dtb_dir_data'].extend(LEGACY_X86_PLATFORMS)
-                if arch == 'arm64' and 'defconfig' in defconfig:
-                    build['dtb_dir_data'].extend(LEGACY_ARM64_PLATFORMS)
                 for dtb in build['dtb_dir_data']:
                     # hack for arm64 dtbs in subfolders
                     dtb_full = dtb
@@ -225,6 +225,7 @@ def main(args):
                                                'test_type': test_type,
                                                'short_template_file': short_template_file,
                                                'arch': arch,
+                                               'ctx_arch': ctx_arch,
                                                'arch_defconfig': arch_defconfig,
                                                'git_branch': branch,
                                                'git_commit': build['git_commit'],
