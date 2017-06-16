@@ -204,7 +204,7 @@ if __name__ == '__main__':
     parser.add_argument("--tree", help="KernelCI build kernel tree", required=True)
     parser.add_argument("--branch", help="KernelCI build kernel branch", required=True)
     parser.add_argument("--describe", help="KernelCI build kernel git describe", required=True)
-    parser.add_argument("--config", help="configuration for the LAVA server")
+    parser.add_argument("--config", help="path to KernelCI configuration file")
     parser.add_argument("--section", default="default", help="section in the LAVA config file")
     parser.add_argument("--plans", nargs='+', required=True, help="test plan to create jobs for")
     parser.add_argument("--arch", help="specific architecture to create jobs for", required=True)
