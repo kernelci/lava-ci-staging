@@ -1,0 +1,30 @@
+{% extends 'boot/generic-uboot-tftp-ramdisk-template.jinja2' %}
+{% block actions %}
+{{ super () }}
+
+  - test:
+      timeout:
+        minutes: 2
+      definitions:
+      - repository:
+          metadata:
+            format: Lava-Test Test Definition 1.0
+            name: dummytest
+            description: "dummytest"
+            os:
+            - debian
+            scope:
+            - functional
+          run:
+            steps:
+            - lava-test-case always-pass --shell true
+            - lava-test-case always-fail --shell false
+            - lava-test-case many-penguins --result pass --measurement 42 --units penguins
+            - lava-test-case no-fish --result fail --measurement 0 --units fish
+            - lava-test-case missing --result skip
+            - lava-test-case oops --result unknown
+        from: inline
+        name: dummytest
+        path: inline/dummytest.yaml
+
+{% endblock %}
