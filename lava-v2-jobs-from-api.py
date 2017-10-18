@@ -137,7 +137,10 @@ def main(args):
                     dtb_full = dtb
                     if arch == 'arm64':
                         dtb = str(dtb).split('/')[-1]
-                    if dtb in device_map:
+                    dtb_target = dtb.partition('.dtb')[0]
+                    if targets and dtb_target not in targets:
+                        print("{} is not in targets".format(dtb_target))
+                    elif dtb in device_map:
                         # print "device %s was in the device_map" % dtb
                         for device in device_map[dtb]:
                             # print "working on device %s" % dtb
@@ -180,8 +183,6 @@ def main(args):
                             elif (arch_defconfig not in plan_defconfigs) and (plan != "boot"):
                                 print "defconfig %s not in test plan %s" % (arch_defconfig, plan)
                                 continue
-                            elif targets is not None and device_type not in targets:
-                                print "device_type %s is not in targets %s" % (device_type, targets)
                             elif arch == 'x86' and dtb == 'x86-32' and 'i386' not in arch_defconfig:
                                 print "%s is not a 32-bit x86 build, skipping for 32-bit device %s" % (defconfig, device_type)
                             else:
