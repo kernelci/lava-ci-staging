@@ -139,8 +139,8 @@ def main(args):
                         dtb = str(dtb).split('/')[-1]
                     dtb_target = dtb.partition('.dtb')[0]
                     if targets and dtb_target not in targets:
-                        print("{} is not in targets".format(dtb_target))
-                    elif dtb in device_map:
+                        continue
+                    if dtb in device_map:
                         # print "device %s was in the device_map" % dtb
                         for device in device_map[dtb]:
                             # print "working on device %s" % dtb
