@@ -74,12 +74,17 @@ def main(args):
     }
 
     print "Working on kernel %s/%s" % (tree, branch)
-    url_params = urllib.urlencode({
+    url_params = {
         'job': tree,
         'kernel': git_describe,
         'git_branch': branch,
         'arch': arch,
-    })
+    }
+    job_defconfig = args.get('defconfig')
+    if job_defconfig:
+        print("Single defconfig: {}".format(job_defconfig))
+        url_params['defconfig'] = job_defconfig
+    url_params = urllib.urlencode(url_params)
     url = urlparse.urljoin(api, 'build?{}'.format(url_params))
     print "Calling KernelCI API: %s" % url
     builds = []
@@ -136,6 +141,9 @@ def main(args):
                     dtb_full = dtb
                     if arch == 'arm64':
                         dtb = str(dtb).split('/')[-1]
+                    dtb_target = dtb.partition('.dtb')[0]
+                    if targets and dtb_target not in targets:
+                        continue
                     if dtb in device_map:
                         # print "device %s was in the device_map" % dtb
                         for device in device_map[dtb]:
@@ -179,8 +187,6 @@ def main(args):
                             elif (arch_defconfig not in plan_defconfigs) and (plan != "boot"):
                                 print "defconfig %s not in test plan %s" % (arch_defconfig, plan)
                                 continue
-                            elif targets is not None and device_type not in targets:
-                                print "device_type %s is not in targets %s" % (device_type, targets)
                             elif arch == 'x86' and dtb == 'x86-32' and 'i386' not in arch_defconfig:
                                 print "%s is not a 32-bit x86 build, skipping for 32-bit device %s" % (defconfig, device_type)
                             elif 'kselftest' in defconfig and plan != 'kselftest':
@@ -307,6 +313,8 @@ if __name__ == '__main__':
                         help="priority for LAVA jobs", default='high')
     parser.add_argument("--callback", help="Add a callback notification to the Job YAML")
     parser.add_argument("--defconfigs", help="Expected number of defconfigs from the API", default=0)
+    parser.add_argument("--defconfig",
+                        help="Only look for builds from this defconfig")
     args = vars(parser.parse_args())
     if args:
         main(args)

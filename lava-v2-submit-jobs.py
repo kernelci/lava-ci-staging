@@ -20,7 +20,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-# Usage ./lava-v2-submit-jobs.py --username test --token xxxx --server http://server/RPC2 --jobs jobfolder
+# Usage ./lava-v2-submit-jobs.py --username test --token xxxx --lab lab-name --jobs jobfolder
 
 import os
 import xmlrpclib
@@ -31,12 +31,15 @@ import time
 import re
 import argparse
 import httplib
+import json
+import configparser
 
 from lib import utils
 from lib import configuration
 
 DEVICE_ONLINE_STATUS = ['idle', 'running', 'reserved']
 JOBS = {}
+SUBMITTED = {}
 
 def submit_jobs(connection):
     print "Fetching all devices from LAVA"
@@ -56,7 +59,8 @@ def submit_jobs(connection):
                     if device_type['name'] == job_info['device_type']:
                         if device_type_has_available(device_type, all_devices):
                             print "Submitting job %s to device-type %s" % (job_info.get('job_name', 'unknown'), job_info['device_type'])
-                            connection.scheduler.submit_job(job_data)
+                            job_id = connection.scheduler.submit_job(job_data)
+                            SUBMITTED[job] = job_id
                         else:
                             print "Found device-type %s on server, but it had no available pipeline devices" % device_type['name']
             elif 'device_group' in job_info:
@@ -91,6 +95,14 @@ def device_type_has_available(device_type, all_devices):
 def main(args):
     config = configuration.get_config(args)
 
+    jobs_submitted = config.get('submitted')
+    lab = config.get('lab')
+    if jobs_submitted:
+        if not lab:
+            raise Exception("Lab name required when saving submitted jobs")
+        if os.path.exists(jobs_submitted):
+            os.unlink(jobs_submitted)
+
     if config.get("repo"):
         retrieve_jobs(config.get("repo"))
 
@@ -100,10 +112,25 @@ def main(args):
 
     if JOBS:
         start_time = time.time()
-        url = utils.validate_input(config.get("username"), config.get("token"),
-                                   config.get("server"))
+        labs_config = configparser.ConfigParser()
+        labs_config.read('labs.ini')
+        lava_api = labs_config[config.get("lab")]['api']
+        print("LAVA API: {}".format(lava_api))
+        url = utils.validate_input(config.get("username"),
+                                   config.get("token"),
+                                   lava_api)
         connection = utils.connect(url)
         submit_jobs(connection)
+        if jobs_submitted and SUBMITTED:
+            print("Saving submitted jobs data in {}".format(jobs_submitted))
+            data = {
+                'start_time': start_time,
+                'lab': config.get('lab'),
+                'jobs': {k: v for k, v in SUBMITTED.iteritems() if v},
+            }
+            with open(jobs_submitted, 'w') as json_file:
+                json.dump(data, json_file)
+
     exit(0)
 
 if __name__ == '__main__':
@@ -111,11 +138,13 @@ if __name__ == '__main__':
     parser.add_argument("--config", help="configuration for the LAVA server")
     parser.add_argument("--section", default="default",
                         help="section in the LAVA config file")
+    parser.add_argument("--lab", help="KernelCI Lab Name")
     parser.add_argument("--jobs", required=True,
                         help="path to jobs directory (default is cwd)")
     parser.add_argument("--username", help="username for the LAVA server")
     parser.add_argument("--token", help="token for LAVA server api")
-    parser.add_argument("--server", help="server url for LAVA server")
     parser.add_argument("--repo", help="git repo for LAVA jobs")
+    parser.add_argument("--submitted", default='submitted.json',
+                        help="path to JSON file to save submitted jobs data")
     args = vars(parser.parse_args())
     main(args)
