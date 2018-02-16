@@ -42,7 +42,7 @@ notify:
   criteria:
     status: finished
   callback:
-    url: {{ api }}/callback/{{ callback_name }}?lab_name={{ lab_name }}&status={STATUS}&status_string={STATUS_STRING}
+    url: {{ callback_url }}/callback/{{ callback_name }}?lab_name={{ lab_name }}&status={STATUS}&status_string={STATUS_STRING}
     method: POST
     dataset: all
     token: {{ callback }}
