@@ -144,6 +144,11 @@ def get_job_params(config, template, opts, device, build, defconfig, plan):
     callback_name = 'lava/boot' if plan == 'boot' else 'lava/test'
     defconfig_base = ''.join(defconfig.split('+')[:1])
 
+    # callback URL (for backend) defaults to --api value if not present
+    callback_url = config.get('callback_url')
+    if not callback_url:
+        callback_url = config.get('api')
+        
     job_params = {
         'name': job_name,
         'dtb_url': dtb_url,
@@ -179,6 +184,7 @@ def get_job_params(config, template, opts, device, build, defconfig, plan):
         'api': config.get('api'),
         'lab_name': config.get('lab'),
         'callback_name': callback_name,
+        'callback_url': callback_url,
         'context': device.get('context'),
     }
 
@@ -384,6 +390,8 @@ if __name__ == '__main__':
                         help="priority for LAVA jobs", default='high')
     parser.add_argument("--callback",
                         help="Add a callback notification to the Job YAML")
+    parser.add_argument("--callback-url",
+                        help="backend URL for callbacks (defaults to --api value)")
     parser.add_argument("--defconfigs", default=0,
                         help="Expected number of defconfigs from the API")
     parser.add_argument("--defconfig_full",
